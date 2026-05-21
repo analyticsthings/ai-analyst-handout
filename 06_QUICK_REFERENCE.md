@@ -1,8 +1,6 @@
 # 🤖 AI FOR SYSTEM ANALYSTS — QUICK REFERENCE v1.0
 
-> 🖨️ Формат: A4 (двусторонняя печать) | 📱 Адаптировано для мобильного | 🔗 Репозиторий: `github.com/ВАШ-ЛОГИН/ai-analyst-handout`
 
----
 
 ## 🔑 ФОРМУЛА ПРОМПТА
 
