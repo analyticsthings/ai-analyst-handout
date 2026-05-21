@@ -7,3 +7,65 @@
 2. Для тестов используйте только файлы из этой папки
 3. При расширении домена добавляйте новые сущности в `scenarios.json`
 
+{
+  "domain": "B2B_REPORTING_SaaS",
+  "users": [
+    { "id": "USER_001", "role": "accountant", "permissions": ["reports:upload", "reports:read"] },
+    { "id": "USER_002", "role": "manager", "permissions": ["reports:read", "reports:approve"] }
+  ],
+  "companies": [
+    { "id": "COMPANY_X", "inn": "[INN_PATTERN]", "kpp": "[KPP_PATTERN]" },
+    { "id": "COMPANY_Y", "inn": "[INN_PATTERN]", "kpp": "[KPP_PATTERN]" }
+  ],
+  "reports": [
+    {
+      "id": "REPORT_ABC",
+      "uploaded_by": "USER_001",
+      "file": { "name": "q3_report.xlsx", "size_mb": 12, "format": "xlsx" },
+      "status": "processed",
+      "errors": []
+    },
+    {
+      "id": "REPORT_DEF",
+      "uploaded_by": "USER_002",
+      "file": { "name": "invalid.xlsx", "size_mb": 3, "format": "xlsx" },
+      "status": "rejected",
+      "errors": [{ "code": "[ERR_CODE_INN]", "field": "inn", "message": "[TBD]" }]
+    }
+  ],
+
+  # Пример 1 (Финтех)
+Клиент ООО «Альфа-Инвест», ИНН 7712345678, хочет получать отчёты по сделкам за январь 2025 с фильтром по контрагентам. Максимальная выгрузка — 5000 записей. При ошибке возвращать код ERR_LIMIT_001.
+
+# Пример 2 (Логистика)
+Менеджер Петров И.С. (petrov@logistics.ru, +7 495 111-22-33) должен видеть статус доставки заказа №ORD-2025-00123. Если курьер не подтвердил получение — эскалировать в поддержку через 2 часа.
+
+# Пример 3 (SaaS)
+Пользователь с тарифом PRO может экспортировать данные в CSV до 100 МБ. При превышении — предлагать апгрейд до ENTERPRISE. Ссылка: https://app.internal.com/upgrade?plan=ent.
+
+# 🧱 Граничные условия для валидации
+
+## 📊 Данные
+- Пустой файл / нулевой размер
+- Максимальный размер (+1 байт к лимиту)
+- Некорректная кодировка, битые заголовки Excel
+- Дубликаты строк, `null` в обязательных полях
+
+## 🔄 Процесс
+- Таймаут обработки > 30с
+- Параллельная загрузка одного файла
+- Отмена в статусе `processing` (race condition)
+- Повторный запрос с тем же `Idempotency-Key`
+
+## 🌐 Интеграции
+- Сервис валидации ИНН недоступен (circuit breaker)
+- S3 возвращает `503 Service Unavailable`
+- Сетевая задержка между микросервисами
+
+## 📝 Правила проверки
+1. Каждый edge case должен иметь `[TBD]` или явный fallback
+2. Не описывать "магическое восстановление" без архитектуры
+3. Проверять идемпотентность и конечную согласованность
+  "statuses": ["created", "paid", "processing", "shipped", "delivered", "cancelled"],
+  "error_codes": ["[ERR_CODE_INN]", "[ERR_CODE_FORMAT]", "[ERR_CODE_SIZE]"]
+}
