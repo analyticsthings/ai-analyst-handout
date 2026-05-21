@@ -1,0 +1,33 @@
+// sanitization.js
+class RequirementSanitizer {
+  constructor(customPatterns = {}) {
+    this.patterns = {
+      inn: [/\b\d{10}\b/g, '[INN_PATTERN]'],
+      kpp: [/\b\d{9}\b/g, '[KPP_PATTERN]'],
+      email: [/[\w.-]+@[\w.-]+\.\w+/g, '[EMAIL_PATTERN]'],
+      phone: [/\+7\s?\(?\d{3}\)?\s?\d{3}-?\d{2}-?\d{2}/g, '[PHONE_PATTERN]'],
+      sumRub: [/\b\d{1,3}(?:\s?\d{3})+(?:\.\d{2})?\s?руб\.?/gi, '[SUM_LIMIT]'],
+      date: [/\b\d{2}\.\d{2}\.\d{4}\b/g, '[DATE_PATTERN]'],
+      ip: [/\b(?:\d{1,3}\.){3}\d{1,3}\b/g, '[IP_PATTERN]'],
+      uuid: [/\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi, '[UUID_PATTERN]'],
+      ...customPatterns
+    };
+  }
+
+  sanitize(text) {
+    let result = text;
+    for (const [pattern, replacement] of Object.values(this.patterns)) {
+      result = result.replace(pattern, replacement);
+    }
+    // Замена компаний и имён (простая эвристика)
+    result = result.replace(/ООО\s+["']?[\w\s\-]+["']?/g, '[COMPANY_PLACEHOLDER]');
+    result = result.replace(/[А-Я][а-я]+\s+[А-Я]\.[А-Я]\./g, '[PERSON_PLACEHOLDER]');
+    return result;
+  }
+}
+
+// Пример
+const sanitizer = new RequirementSanitizer();
+const raw = 'Клиент ООО «Вектор», ИНН 7701234567, сумма 15 000 000 руб.';
+console.log(sanitizer.sanitize(raw));
+// → Клиент [COMPANY_PLACEHOLDER], ИНН [INN_PATTERN], сумма [SUM_LIMIT].
